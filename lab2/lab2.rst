@@ -1,9 +1,7 @@
 MOwNiT2 - lab2
 ++++++++++++++
 
-
-
-.. Contents::
+.. Zawiera::
 
 
 Zadanie 1
@@ -13,7 +11,7 @@ Zadanie 1
 Metoda Gausa Jordana
 
 
-.. code-block::python
+.. code-block:: python
 
     def gauss_jordan(A,b):
         n = len(A)
@@ -51,7 +49,6 @@ Metoda Gausa Jordana
             for k in range(i-1, -1, -1):
                 A[k][n] -= A[k][i] * x[i]
         return x
-
 
 
 Zadanie 2
@@ -103,8 +100,218 @@ Faktoryzacja LU
 
 Zadanie 3
 =========
-Kod
-----
+
+
+Dla rozwiązania układów elektrycznych korzystam z pakietu networkx
+
+
+Rozwiązanie za pomocą praw Kirchoffa
+------------------------------------
+
+
+    1) Dla każdego wierzchołka buduje mapę wierzchołków wejściowych i wyjściowych
+    2) Dla mapy wierzchołków wyjściowych i wejściowych generuję równania z I prawa Kirchoffa
+    3) Szukam cykli
+    4) Dla każdego cyklu generuje równania z II prawa Kirchoffa
+    5) Rozwiązuję macierz
+
+
+
+    .. code-block:: python
+
+        import networkx as nx
+        import numpy as np
+
+        class KirchoffCirucitResolver():
+            def __init__(self, lines, start, end, power_volate):
+                self.lines = lines
+                self.start = start
+                self.end = end
+                self.power_volate = power_volate
+                self.weight_map = {}
+                self.edges_map = {}
+                self.node_inp_map = {}
+                self.node_out_map = {}
+
+            def resolve(self):
+                self.find_cycles()
+                self.display_cycles()
+                self.build_node_inp_out_map()
+                self.print_outs_and_inps()
+                self.init_intense_map_to_index()
+                self.first_law()
+                self.second_law()
+                self.solve_matrix()
+
+
+            def find_cycles(self):
+                self.g = nx.Graph()
+                edge_to_weihgt_map = {}
+                lines.append('{} {} {}'.format(self.start, 'x', 0))
+                lines.append('{} {} {}'.format(self.end, 'x', 0))
+                for line in self.lines:
+                    a, b, v = tuple(line.split())
+                    self.weight_map[(a, b)] = v
+                    self.weight_map[(b, a)] = v
+                    self.g.add_edge(a, b)
+
+                cycles = list(nx.cycle_basis(self.g))
+                self.cycles = cycles
+
+            def display_cycles(self):
+                print('Found Cycles')
+                for cycle in self.cycles:
+                    print(cycle)
+
+            def build_node_inp_out_map(self):
+                self.init_node_inp_out_map()
+                for cycle in self.cycles:
+                    i = 0
+                    while i < len(cycle):
+                        current = cycle[i]
+                        output = cycle[(i + 1) % len(cycle)]
+                        input = cycle[(i - 1) % len(cycle)]
+                        if 'x' in cycle:
+                            if current == 'x' or input == 'x':
+                                self.node_inp_map[current].append(input)
+                            if current == 'x' or output == 'x':
+                                self.node_out_map[current].append(output)
+
+                        else:
+                            self.node_out_map[current].append(output)
+                            self.node_inp_map[current].append(input)
+
+                        i += 1
+
+            def init_node_inp_out_map(self):
+                for node in self.g.nodes:
+                    self.node_inp_map[node] = []
+                    self.node_out_map[node] = []
+
+            def print_outs_and_inps(self):
+                for node in self.g.nodes:
+                    print('node {} input {} output {}'.format(node, self.node_inp_map[node], self.node_out_map[node]))
+
+            def firs_law(self):
+                pass
+
+            def init_intense_map_to_index(self):
+                i = 0
+                self.intense_index = {}
+                self.intense_index_rev = {}
+
+                for (a, b) in self.g.edges:
+                    self.intense_index[(a, b)] = i
+                    self.intense_index[(b, a)] = i
+                    self.intense_index_rev[i] = (a, b)
+                    i += 1
+                print('Intense maping')
+                for k in self.intense_index.keys():
+                    print('edge {} : {}'.format(k, self.intense_index[k]))
+
+            def first_law(self):
+                self.A = []
+                self.b = []
+                print('First law, generated:')
+                s = ''
+                for i in range(0, len(self.g.edges)):
+                    s += '{}|'.format(self.intense_index_rev[i])
+                print(s)
+
+                for node in self.g.nodes:
+                    eq = np.zeros(len(self.g.edges))
+
+                    for outp in self.node_out_map[node]:
+                        eq[self.intense_index[node, outp]] = -1
+
+                    for inp in self.node_inp_map[node]:
+                        eq[self.intense_index[inp, node]] = 1
+
+                    print('node {}, eq: {}'.format(node, eq))
+                    self.A.append(eq)
+                    self.b.append(0)
+
+            def second_law(self):
+
+                for cycle in self.cycles:
+                    eq = np.zeros(len(self.g.edges))
+                    i = 0
+                    r = 0
+                    while i < len(cycle):
+                        fr, to = cycle[i], cycle[(i + 1) % len(cycle)]
+                        eq[self.intense_index[(fr, to)]] = self.weight_map[(fr, to)]
+
+                        if 'x' in cycle:
+                            r = -self.power_volate
+                        i += 1
+
+                    print('cycle {}, eq{} = {}'.format(cycle, eq, r))
+                    self.A.append(eq)
+                    self.b.append(r)
+
+                pass
+
+            def solve_matrix(self):
+                a = np.array(self.A)
+                b = np.array(self.b)
+
+                AT = a.transpose()
+                A = np.dot(AT, a)
+                Y = np.dot(AT, b)
+
+                from scipy.linalg import solve
+
+                x = solve(A, Y)
+
+                print(x)
+                pass
+
+
+        def draw_graph(g, node_from, node_to):
+            graph = nx.DiGraph()
+            labels = {}
+
+            for k in g.keys():
+                f, t = k
+                graph.add_edge(f, t, weight=g[k], label=g[k])
+                labels[(f, t)] = g[k]
+
+            intense = sum(map(lambda x: g[x], graph.edges(node_from)))
+
+            weights = [graph[u][v]['weight'] for u, v in graph.edges]
+
+            pos = nx.circular_layout(graph)  # positions for all nodes
+
+            # nodes
+            nx.draw_networkx_nodes(graph, pos, node_size=700)
+
+            # edges
+            nx.draw_networkx_edges(graph, pos, edgelist=graph.edges, width=weights, arrows=True)
+
+            # labels
+            nx.draw_networkx_labels(graph, pos, font_size=20, font_family='sans-serif')
+            nx.draw_networkx_edge_labels(graph, pos, edge_labels=labels)
+            import matplotlib.pyplot as plt
+
+            plt.axis('off')
+            plt.show()
+
+            nx.draw(g, nx.circular_layout(g), edge_labels=labels, edges=g.edges, width=weights)
+
+
+
+Metoda potencjałow wezłowych
+----------------------------
+
+
+0) Szukam węzłów (wierzchołki o stopniu conajmniej 3)
+1) Dla każdego znalezionego węzła szukam sąsiednie węzły
+2) Dla każdego węzła generuję jego równanie uwzględniając konduktancje do sąsiednich węzłów
+3) Rozwiązuje macierz
+4) Dla otrzymanych potencjałów liczę napięcia na gałęziach
+5) Z prawa Ohma obliczam natężenia na gałęziach
+
+
 .. code-block:: python
 
     import networkx as nx
@@ -347,229 +554,18 @@ Kod
             return edges
 
 
-    class KirchoffCirucitResolver():
-        def __init__(self, lines, start, end, power_volate):
-            self.lines = lines
-            self.start = start
-            self.end = end
-            self.power_volate = power_volate
-            self.weight_map = {}
-            self.edges_map = {}
-            self.node_inp_map = {}
-            self.node_out_map = {}
-
-        def resolve(self):
-            self.find_cycles()
-            self.display_cycles()
-            self.build_node_inp_out_map()
-            self.print_outs_and_inps()
-            self.init_intense_map_to_index()
-            self.first_law()
-            self.second_law()
-            self.solve_matrix()
-
-
-        def find_cycles(self):
-            self.g = nx.Graph()
-            edge_to_weihgt_map = {}
-            lines.append('{} {} {}'.format(self.start, 'x', 0))
-            lines.append('{} {} {}'.format(self.end, 'x', 0))
-            for line in self.lines:
-                a, b, v = tuple(line.split())
-                self.weight_map[(a, b)] = v
-                self.weight_map[(b, a)] = v
-                self.g.add_edge(a, b)
-
-            cycles = list(nx.cycle_basis(self.g))
-            self.cycles = cycles
-
-        def display_cycles(self):
-            print('Found Cycles')
-            for cycle in self.cycles:
-                print(cycle)
-
-        def build_node_inp_out_map(self):
-            self.init_node_inp_out_map()
-            for cycle in self.cycles:
-                i = 0
-                while i < len(cycle):
-                    current = cycle[i]
-                    output = cycle[(i + 1) % len(cycle)]
-                    input = cycle[(i - 1) % len(cycle)]
-                    if 'x' in cycle:
-                        if current == 'x' or input == 'x':
-                            self.node_inp_map[current].append(input)
-                        if current == 'x' or output == 'x':
-                            self.node_out_map[current].append(output)
-
-                    else:
-                        self.node_out_map[current].append(output)
-                        self.node_inp_map[current].append(input)
-
-                    i += 1
-
-        def init_node_inp_out_map(self):
-            for node in self.g.nodes:
-                self.node_inp_map[node] = []
-                self.node_out_map[node] = []
-
-        def print_outs_and_inps(self):
-            for node in self.g.nodes:
-                print('node {} input {} output {}'.format(node, self.node_inp_map[node], self.node_out_map[node]))
-
-        def firs_law(self):
-            pass
-
-        def init_intense_map_to_index(self):
-            i = 0
-            self.intense_index = {}
-            self.intense_index_rev = {}
-
-            for (a, b) in self.g.edges:
-                self.intense_index[(a, b)] = i
-                self.intense_index[(b, a)] = i
-                self.intense_index_rev[i] = (a, b)
-                i += 1
-            print('Intense maping')
-            for k in self.intense_index.keys():
-                print('edge {} : {}'.format(k, self.intense_index[k]))
-
-        def first_law(self):
-            self.A = []
-            self.b = []
-            print('First law, generated:')
-            s = ''
-            for i in range(0, len(self.g.edges)):
-                s += '{}|'.format(self.intense_index_rev[i])
-            print(s)
-
-            for node in self.g.nodes:
-                eq = np.zeros(len(self.g.edges))
-
-                for outp in self.node_out_map[node]:
-                    eq[self.intense_index[node, outp]] = -1
-
-                for inp in self.node_inp_map[node]:
-                    eq[self.intense_index[inp, node]] = 1
-
-                print('node {}, eq: {}'.format(node, eq))
-                self.A.append(eq)
-                self.b.append(0)
-
-        def second_law(self):
-
-            for cycle in self.cycles:
-                eq = np.zeros(len(self.g.edges))
-                i = 0
-                r = 0
-                while i < len(cycle):
-                    fr, to = cycle[i], cycle[(i + 1) % len(cycle)]
-                    eq[self.intense_index[(fr, to)]] = self.weight_map[(fr, to)]
-
-                    if 'x' in cycle:
-                        r = -self.power_volate
-                    i += 1
-
-                print('cycle {}, eq{} = {}'.format(cycle, eq, r))
-                self.A.append(eq)
-                self.b.append(r)
-
-            pass
-
-        def solve_matrix(self):
-            a = np.array(self.A)
-            b = np.array(self.b)
-
-            AT = a.transpose()
-            A = np.dot(AT, a)
-            Y = np.dot(AT, b)
-
-            from scipy.linalg import solve
-
-            x = solve(A, Y)
-
-            print(x)
-            pass
-
-
-    def draw_graph(g, node_from, node_to):
-        graph = nx.DiGraph()
-        labels = {}
-
-        for k in g.keys():
-            f, t = k
-            graph.add_edge(f, t, weight=g[k], label=g[k])
-            labels[(f, t)] = g[k]
-
-        intense = sum(map(lambda x: g[x], graph.edges(node_from)))
-
-        weights = [graph[u][v]['weight'] for u, v in graph.edges]
-
-        pos = nx.circular_layout(graph)  # positions for all nodes
-
-        # nodes
-        nx.draw_networkx_nodes(graph, pos, node_size=700)
-
-        # edges
-        nx.draw_networkx_edges(graph, pos, edgelist=graph.edges, width=weights, arrows=True)
-
-        # labels
-        nx.draw_networkx_labels(graph, pos, font_size=20, font_family='sans-serif')
-        nx.draw_networkx_edge_labels(graph, pos, edge_labels=labels)
-        import matplotlib.pyplot as plt
-
-        plt.axis('off')
-        plt.show()
-
-        nx.draw(g, nx.circular_layout(g), edge_labels=labels, edges=g.edges, width=weights)
-
-        def generate_2d_graph():
-            n = 3
-            for i in range(0, n):
-                # print('______i', i)
-                for j in range(0, n - 1):
-                    na, nb = n * i + j, n * i + j + 1
-                    print('{} {} {}'.format(na, nb, 1))
-
-                    if (i != n - 1):
-                        nb = n * (i + 1) + j
-                        print('{} {} {}'.format(na, nb, 1))
-                if (i != n - 1):
-                    print('{} {} {}'.format(n * i + n - 1, n * i + 2 * n - 1, 1))
-
-
-    with open('filepath') as f:
-        lines = f.read().splitlines()
-        start_node = '1'
-        end_node = '3'
-        power = 20
-
-        # returns a map {edge : weight}
-
-        # edges_k = kirrchoff_circuit_resolve(lines)
-        nodalResolver = NodalCircuitResovler(lines, start_node, end_node, power)
-        kirchoffResolver = KirchoffCirucitResolver(lines, start_node, end_node, power)
-
-        edges_n = nodalResolver.resolve()
-
-        for e in edges_n.keys():
-            print(edges_n[e], e)
-        # edges_k = kirchoffResolver.resolve()
-
-        draw_graph(edges_n, start_node, end_node)
-
 
 Przykład
 --------
 Graf losowy, z napięciem 20V między węzłami 1 a 3
 
 .. image:: https://raw.githubusercontent.com/moskalap/mownit-lab/master/lab2/img/losowy.png?token=AWCREqkz0MlfDSGaNKq6wXUSb4Kdc5K1ks5aCBPWwA%3D%3D
-2d
+
+Graf 2D - niestety problem z wizualizacją
 
 .. image:: https://raw.githubusercontent.com/moskalap/mownit-lab/master/lab2/img/2d-cut.png?token=AWCREmjPAPKvFAijtTHoaHmL4Kamr5Ndks5aCBOZwA%3D%3D
 
-kubiczny
-
+Graf kubiczny
 
 .. image:: https://raw.githubusercontent.com/moskalap/mownit-lab/master/lab2/img/kubiczny-cut.png?token=AWCREt_9hO7W9SQi2jmDtO7nGzNyw2Rcks5aCBPzwA%3D%3D
 
