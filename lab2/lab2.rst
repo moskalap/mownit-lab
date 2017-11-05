@@ -556,15 +556,15 @@ Przykład
 --------
 Graf losowy, z napięciem 20V między węzłami 1 a 3
 
-.. image:: https://raw.githubusercontent.com/moskalap/mownit-lab/master/lab2/img/losowy.png?token=AWCREqkz0MlfDSGaNKq6wXUSb4Kdc5K1ks5aCBPWwA%3D%3D
+.. image:: https://raw.githubusercontent.com/moskalap/mownit-lab/master/lab2/res/img/losowy.png
 
 Graf 2D - niestety problem z wizualizacją
 
-.. image:: https://raw.githubusercontent.com/moskalap/mownit-lab/master/lab2/img/2d-cut.png?token=AWCREmjPAPKvFAijtTHoaHmL4Kamr5Ndks5aCBOZwA%3D%3D
+.. image:: https://raw.githubusercontent.com/moskalap/mownit-lab/master/lab2/res/img/2d-cut.png
 
 Graf kubiczny
 
-.. image:: https://raw.githubusercontent.com/moskalap/mownit-lab/master/lab2/img/kubiczny-cut.png?token=AWCREt_9hO7W9SQi2jmDtO7nGzNyw2Rcks5aCBPzwA%3D%3D
+.. image:: https://raw.githubusercontent.com/moskalap/mownit-lab/master/lab2/res/img/kubiczny-cut.png
 
 
 
