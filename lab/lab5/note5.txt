@@ -1,0 +1,83 @@
+a <- R ^mxn
+A = uEV^T
+U <- R ^mxn ortogonalna u^-1 =u^T
+V <- R ^mxn ortogonalna v^-1 =v^T
+E <- diagonalna
+    [v1             ]
+    [   v2          ]
+    [       v3      ]
+    [               ]
+    vi <-r
+    v1 >v2> . .
+
+   y = A x          y = U   E   V^Tx
+   y <- R ^mxn                  [rotacja]
+                            [skalowanie]
+                        [r o t a c ja]
+
+
+Iloczyn zewnetrzy 2 wektorow
+
+
+u v ^T
+u <- R ^nx1
+
+
+
+def plot_sphere(x,y,z):
+
+
+    from mpl_toolkits.mplot3d import Axes3D
+    import matplotlib.pyplot as plt
+    import numpy as np
+    import scipy.ndimage
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    s = np.linspace(0, 2 * np.pi, 10)
+    t = np.linspace(0, np.pi, 10)
+
+    x = 10 * np.outer(np.cos(s), np.sin(t))
+    y = 10 * np.outer(np.sin(s), np.sin(t))
+    z = 10 * np.outer(np.ones(np.size(s)), np.cos(t))
+
+    ax.plot_surface(x, y, z,color='b',)
+
+    plt.show()
+
+
+plot_sphere(1,1,1)
+while s < 2* np.math.pi:
+    s+= 0.1
+    t = 0
+    while t < np.math.pi:
+        t += 0.1
+        x.append(np.cos(s) * np.sin(t))
+        y.append(np.sin(s) * np.sin(t))
+        z.append(np.cos(t))
+
+
+    import matplotlib.pyplot as plt
+    ""
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    points = []
+    for i in range(0, len(x)):
+        points.append([x[i], y[i], z[i]])
+
+    mat = np.matrix(points)
+    a1 = np.random.rand(3,3)
+    a2 = np.random.rand(3,3)
+    a3 = np.random.rand(3,3)
+
+
+    v1 = mat * a1
+    v2 = mat * a2
+    v3 = mat * a3
+
+    mat = np.matrix([[1,1,1],[1,14,1],[10,10,10]]) * np.array([x,y,z])
+    ax.scatter(mat[:,0], mat[:,1], mat[:,2])
+    plt.show()
+
+
